@@ -7,13 +7,14 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { MESSAGES } from '@/constants';
 import { useTheme } from '@/contexts/theme';
+import type { RootState } from '@/store';
 import { logout } from '@/store/features/auth';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 export function Header() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { user, loading } = useAppSelector((state) => state.auth);
+  const { user, loading } = useAppSelector((state: RootState) => state.auth);
   const { theme, toggleTheme, mounted } = useTheme();
 
   const handleLogout = () => {

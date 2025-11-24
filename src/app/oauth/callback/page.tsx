@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -12,8 +12,13 @@ function OAuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
+  const hasProcessedRef = useRef(false);
 
   useEffect(() => {
+    // Only process OAuth callback once
+    if (hasProcessedRef.current) return;
+    hasProcessedRef.current = true;
+
     const urlError = searchParams.get('error');
     if (urlError) {
       toast.error(ERRORS.AUTH_FAILED);
@@ -33,7 +38,8 @@ function OAuthCallbackContent() {
         toast.error(ERRORS.AUTH_FAILED);
         router.replace('/login');
       });
-  }, [searchParams, router, dispatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount - searchParams is stable in Next.js
 
   return (
     <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-12">

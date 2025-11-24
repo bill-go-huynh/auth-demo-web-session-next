@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button, Card, Input } from '@/components/ui';
 import { MESSAGES } from '@/constants';
+import type { RootState } from '@/store';
 import { registerWithPassword } from '@/store/features/auth';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { isValidEmail, isValidPassword, sanitizeInput } from '@/utils';
@@ -14,7 +15,7 @@ import { isValidEmail, isValidPassword, sanitizeInput } from '@/utils';
 export default function RegisterPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector((state) => state.auth);
+  const { loading, error } = useAppSelector((state: RootState) => state.auth);
   const [formErrors, setFormErrors] = useState<{
     name?: string;
     email?: string;

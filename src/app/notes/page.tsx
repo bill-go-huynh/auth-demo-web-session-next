@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button, Card, Input, Modal } from '@/components/ui';
 import { CONFIRMATIONS, MESSAGES } from '@/constants';
+import type { RootState } from '@/store';
 import { createTask, deleteTask, fetchTasks, updateTask } from '@/store/features/tasks';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import type { Task } from '@/types';
@@ -14,8 +15,8 @@ import { formatDate } from '@/utils';
 export default function NotesPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { user, loading: authLoading } = useAppSelector((state) => state.auth);
-  const { items: tasks, loading, error } = useAppSelector((state) => state.tasks);
+  const { user, loading: authLoading } = useAppSelector((state: RootState) => state.auth);
+  const { items: tasks, loading, error } = useAppSelector((state: RootState) => state.tasks);
   const [formData, setFormData] = useState({ title: '', description: '' });
   const [formErrors, setFormErrors] = useState<{ title?: string }>({});
   const [submitting, setSubmitting] = useState(false);
@@ -83,7 +84,6 @@ export default function NotesPage() {
       setFormErrors({});
       toast.success(MESSAGES.TASK_CREATED);
     } catch {
-      dispatch(fetchTasks());
     } finally {
       setSubmitting(false);
     }
@@ -103,8 +103,9 @@ export default function NotesPage() {
         }),
       ).unwrap();
       toast.success(MESSAGES.TASK_UPDATED);
+      // No need to fetchTasks() - Redux already updates state on success
     } catch {
-      dispatch(fetchTasks());
+      // Error is handled by Redux slice
     } finally {
       setTogglingId(null);
     }
@@ -139,8 +140,9 @@ export default function NotesPage() {
       setEditFormData({ title: '', description: '' });
       setEditFormErrors({});
       toast.success(MESSAGES.TASK_UPDATED);
+      // No need to fetchTasks() - Redux already updates state on success
     } catch {
-      dispatch(fetchTasks());
+      // Error is handled by Redux slice
     } finally {
       setUpdatingId(null);
     }
@@ -153,8 +155,9 @@ export default function NotesPage() {
       setDeletingId(id);
       await dispatch(deleteTask(id)).unwrap();
       toast.success(MESSAGES.TASK_DELETED);
+      // No need to fetchTasks() - Redux already updates state on success
     } catch {
-      dispatch(fetchTasks());
+      // Error is handled by Redux slice
     } finally {
       setDeletingId(null);
     }
@@ -222,7 +225,7 @@ export default function NotesPage() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {tasks.map((task) => (
+            {tasks.map((task: Task) => (
               <Card key={task.id} className="hover:shadow-md transition-shadow">
                 <div className="flex items-start gap-4">
                   <input

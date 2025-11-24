@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 
 import { Card } from '@/components/ui';
 import { MESSAGES } from '@/constants';
-import { userApi } from '@/services';
+import type { RootState } from '@/store';
 import { useAppSelector } from '@/store/hooks';
 import { formatDate } from '@/utils';
 
 export default function UserPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAppSelector((state) => state.auth);
+  const { user, loading: authLoading } = useAppSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     if (!authLoading && !user) {

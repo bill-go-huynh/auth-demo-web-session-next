@@ -1,7 +1,7 @@
 import { type Action, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 import { ERRORS } from '@/constants';
-import { authApi } from '@/services';
+import { authApi, getErrorInfo } from '@/services';
 import type { LoginData } from '@/types';
 
 import { handleFulfilled, handlePending, handleRejected } from '../../utils/reducers';
@@ -15,11 +15,9 @@ const initialState: AuthState = {
 
 export const loginWithPassword = createAsyncThunk(
   'auth/loginWithPassword',
-  async (data: LoginData, { rejectWithValue, dispatch }) => {
+  async (data: LoginData, { rejectWithValue }) => {
     try {
       const response = await authApi.login(data);
-      // After successful login, fetch user info
-      await dispatch(fetchMe());
       return response.user;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : ERRORS.LOGIN_FAILED);
@@ -29,13 +27,10 @@ export const loginWithPassword = createAsyncThunk(
 
 export const registerWithPassword = createAsyncThunk(
   'auth/registerWithPassword',
-  async (data: LoginData & { name: string }, { rejectWithValue, dispatch }) => {
+  async (data: LoginData & { name: string }, { rejectWithValue }) => {
     try {
       await authApi.register(data);
-      // After successful registration, login automatically
       const loginResponse = await authApi.login({ email: data.email, password: data.password });
-      // Fetch user info after login
-      await dispatch(fetchMe());
       return loginResponse.user;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : ERRORS.REGISTER_FAILED);
@@ -48,7 +43,12 @@ export const fetchMe = createAsyncThunk('auth/fetchMe', async (_, { rejectWithVa
     const response = await authApi.me();
     return response.user;
   } catch (error) {
-    return rejectWithValue(error instanceof Error ? error.message : ERRORS.UNAUTHORIZED);
+    const { statusCode } = getErrorInfo(error);
+    return rejectWithValue({
+      message: ERRORS.UNAUTHORIZED,
+      statusCode,
+      isUnauthorized: statusCode === 401,
+    });
   }
 });
 
@@ -57,7 +57,6 @@ export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValu
     await authApi.logout();
     return null;
   } catch (error) {
-    // Even if logout fails on server, clear local state
     return rejectWithValue(error instanceof Error ? error.message : ERRORS.LOGOUT_FAILED);
   }
 });
@@ -72,7 +71,6 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // loginWithPassword
       .addCase(loginWithPassword.pending, handlePending)
       .addCase(loginWithPassword.fulfilled, (state, action) => {
         handleFulfilled(state);
@@ -85,7 +83,6 @@ const authSlice = createSlice({
           ERRORS.LOGIN_FAILED,
         );
       })
-      // registerWithPassword
       .addCase(registerWithPassword.pending, handlePending)
       .addCase(registerWithPassword.fulfilled, (state, action) => {
         handleFulfilled(state);
@@ -98,31 +95,35 @@ const authSlice = createSlice({
           ERRORS.REGISTER_FAILED,
         );
       })
-      // fetchMe
       .addCase(fetchMe.pending, handlePending)
       .addCase(fetchMe.fulfilled, (state, action) => {
         handleFulfilled(state);
         state.user = action.payload;
       })
       .addCase(fetchMe.rejected, (state, action) => {
-        handleRejected(
-          state,
-          action as Action<string> & { payload?: unknown },
-          ERRORS.UNAUTHORIZED,
-        );
+        const payload = action.payload as
+          | { statusCode?: number; isUnauthorized?: boolean; message?: string }
+          | undefined;
+        if (payload?.statusCode === 401 || payload?.isUnauthorized) {
+          state.loading = false;
+          state.error = '';
+        } else {
+          handleRejected(
+            state,
+            action as Action<string> & { payload?: unknown },
+            ERRORS.UNAUTHORIZED,
+          );
+        }
         state.user = null;
       })
-      // logout
       .addCase(logout.pending, handlePending)
       .addCase(logout.fulfilled, (state) => {
         handleFulfilled(state);
         state.user = null;
       })
       .addCase(logout.rejected, (state, action) => {
-        // Clear user even if logout fails
         handleFulfilled(state);
         state.user = null;
-        // Optionally show error message
         if (action.payload) {
           state.error = action.payload as string;
         }
