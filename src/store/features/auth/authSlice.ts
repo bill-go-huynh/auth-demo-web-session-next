@@ -75,6 +75,7 @@ const authSlice = createSlice({
       .addCase(loginWithPassword.fulfilled, (state, action) => {
         handleFulfilled(state);
         state.user = action.payload;
+        state.error = '';
       })
       .addCase(loginWithPassword.rejected, (state, action) => {
         handleRejected(
@@ -87,6 +88,7 @@ const authSlice = createSlice({
       .addCase(registerWithPassword.fulfilled, (state, action) => {
         handleFulfilled(state);
         state.user = action.payload;
+        state.error = '';
       })
       .addCase(registerWithPassword.rejected, (state, action) => {
         handleRejected(
