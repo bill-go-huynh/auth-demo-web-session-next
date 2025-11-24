@@ -1,4 +1,5 @@
 import Link from 'next/link';
+
 import { Button, Card } from '@/components/ui';
 
 export default function Home() {
@@ -7,8 +8,7 @@ export default function Home() {
       <Card className="text-center">
         <h1 className="text-3xl font-bold mb-4">Welcome to Session Client</h1>
         <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-          This is the Session client using React Context API and session-based
-          authentication.
+          This is the Session client using Redux Toolkit and session-based authentication.
         </p>
         <div className="flex gap-4 justify-center">
           <Link href="/login">

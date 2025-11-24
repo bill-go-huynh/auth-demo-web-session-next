@@ -1,44 +1,39 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { MESSAGES, ERRORS } from '@/lib/constants';
 
-export default function OAuthCallbackPage() {
+import { ERRORS, MESSAGES } from '@/constants';
+import { fetchMe } from '@/store/features/auth';
+import { useAppDispatch } from '@/store/hooks';
+
+function OAuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { refreshMe, user, loading } = useAuth();
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     const urlError = searchParams.get('error');
     if (urlError) {
-      const timeoutId = setTimeout(() => {
-        router.push(`/login?error=${ERRORS.AUTH_FAILED}`);
-      }, 2000);
-      return () => clearTimeout(timeoutId);
+      toast.error(ERRORS.AUTH_FAILED);
+      router.replace('/login');
+      return;
     }
 
-    const handleCallback = async () => {
-      await refreshMe();
-    };
-
-    handleCallback();
-  }, [refreshMe, searchParams, router]);
-
-  useEffect(() => {
-    if (!loading) {
-      const urlError = searchParams.get('error');
-      if (urlError) {
-        return;
-      }
-      if (user) {
-        router.push('/notes');
-      } else {
-        router.push(`/login?error=${ERRORS.AUTH_FAILED}`);
-      }
-    }
-  }, [user, loading, router, searchParams]);
+    // With session-based auth, the session cookie is set by the backend
+    // We just need to fetch user info
+    dispatch(fetchMe())
+      .unwrap()
+      .then(() => {
+        toast.success(MESSAGES.LOGIN_SUCCESS);
+        router.replace('/notes');
+      })
+      .catch(() => {
+        toast.error(ERRORS.AUTH_FAILED);
+        router.replace('/login');
+      });
+  }, [searchParams, router, dispatch]);
 
   return (
     <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -46,5 +41,13 @@ export default function OAuthCallbackPage() {
         <p className="text-lg">{MESSAGES.COMPLETING_AUTH}</p>
       </div>
     </div>
+  );
+}
+
+export default function OAuthCallbackPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-12">{MESSAGES.COMPLETING_AUTH}</div>}>
+      <OAuthCallbackContent />
+    </Suspense>
   );
 }
